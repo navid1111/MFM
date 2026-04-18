@@ -51,7 +51,8 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, default=0, help='local rank for DistributedDataParallel')
+    parser.add_argument("--local-rank", "--local_rank", dest="local_rank", type=int, default=0,
+                        help='local rank for DistributedDataParallel')
     parser.add_argument('--launcher', choices=['pytorch', 'slurm'], default='slurm', help='job launcher')
     parser.add_argument('--port', type=int, default=29500, help='port only works when launcher=="slurm"')
 
@@ -212,6 +213,9 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, 
 if __name__ == '__main__':
     args, config = parse_option()
 
+    # NCCL is unavailable on Windows builds; use Gloo in that case.
+    dist_backend = 'nccl' if (os.name != 'nt' and torch.cuda.is_available()) else 'gloo'
+
     if config.AMP_OPT_LEVEL != "O0":
         assert amp is not None, "amp not installed!"
 
@@ -235,7 +239,7 @@ if __name__ == '__main__':
         os.environ['MASTER_ADDR'] = addr
         os.environ['WORLD_SIZE'] = str(ntasks)
         os.environ['RANK'] = str(proc_id)
-        dist.init_process_group(backend='nccl')
+        dist.init_process_group(backend=dist_backend)
     elif args.launcher == 'pytorch':
         ## initialize pytorch distributed training environment
         if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
@@ -243,10 +247,16 @@ if __name__ == '__main__':
             world_size = int(os.environ['WORLD_SIZE'])
             print(f"RANK and WORLD_SIZE in environ: {rank}/{world_size}")
         else:
-            rank = -1
-            world_size = -1
-        torch.cuda.set_device(config.LOCAL_RANK)
-        dist.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
+            # Allow direct single-process launches without torchrun.
+            rank = 0
+            world_size = 1
+            os.environ['RANK'] = '0'
+            os.environ['WORLD_SIZE'] = '1'
+            os.environ['MASTER_ADDR'] = '127.0.0.1'
+            os.environ['MASTER_PORT'] = str(args.port)
+        if torch.cuda.is_available():
+            torch.cuda.set_device(config.LOCAL_RANK)
+        dist.init_process_group(backend=dist_backend, init_method='env://', world_size=world_size, rank=rank)
     else:
         raise ValueError(f'Invalid launcher type: {args.launcher}')
     torch.distributed.barrier()

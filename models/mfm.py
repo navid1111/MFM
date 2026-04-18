@@ -12,6 +12,7 @@ from .frequency_loss import FrequencyLoss
 from .swin_transformer import SwinTransformer
 from .utils import get_2d_sincos_pos_embed
 from .vision_transformer import VisionTransformer
+from .cvt import CvTForMFM
 
 
 class SwinTransformerForMFM(SwinTransformer):
@@ -336,6 +337,10 @@ def build_mfm(config):
             config=config)
         encoder_stride = 32
         decoder=None
+    elif model_type == 'cvt':
+        encoder = CvTForMFM(config=config)
+        encoder_stride = config.MODEL.CVT.ENCODER_STRIDE
+        decoder = None
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 

@@ -64,13 +64,17 @@ def build_finetune_optimizer(config, model, logger):
         depths = config.MODEL.SWIN.DEPTHS
         num_layers = sum(depths)
         get_layer_func = partial(get_swin_layer, num_layers=num_layers + 2, depths=depths)
+        scales = list(config.TRAIN.LAYER_DECAY ** i for i in reversed(range(num_layers + 2)))
     elif config.MODEL.TYPE == 'vit':
         num_layers = config.MODEL.VIT.DEPTH
         get_layer_func = partial(get_vit_layer, num_layers=num_layers + 2)
+        scales = list(config.TRAIN.LAYER_DECAY ** i for i in reversed(range(num_layers + 2)))
+    elif config.MODEL.TYPE == 'cvt':
+        num_layers = 0
+        get_layer_func = None
+        scales = None
     else:
         raise NotImplementedError
-    
-    scales = list(config.TRAIN.LAYER_DECAY ** i for i in reversed(range(num_layers + 2)))
     
     skip = {}
     skip_keywords = {}

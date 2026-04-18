@@ -56,7 +56,8 @@ def parse_option():
     parser.add_argument('--throughput', action='store_true', help='test throughput only')
 
     # distributed training
-    parser.add_argument("--local_rank", type=int, default=0, help='local rank for DistributedDataParallel')
+    parser.add_argument("--local-rank", "--local_rank", dest="local_rank", type=int, default=0,
+                        help='local rank for DistributedDataParallel')
     parser.add_argument('--launcher', choices=['pytorch', 'slurm'], default='slurm', help='job launcher')
     parser.add_argument('--port', type=int, default=29500, help='port only works when launcher=="slurm"')
 

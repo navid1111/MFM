@@ -123,6 +123,15 @@ _C.MODEL.RESNET = CN()
 _C.MODEL.RESNET.LAYERS = [3, 4, 6, 3]
 _C.MODEL.RESNET.IN_CHANS = 3
 
+# CvT parameters
+_C.MODEL.CVT = CN()
+_C.MODEL.CVT.NAME = 'cvt_13'
+_C.MODEL.CVT.IN_CHANS = 3
+# Stage index to decode from during MFM pre-training. 3 means final stage.
+_C.MODEL.CVT.DECODE_STAGE = 3
+# Spatial downsample stride of the selected stage (224 -> 14 means stride 16).
+_C.MODEL.CVT.ENCODER_STRIDE = 16
+
 # [MFM] Reconstruction target type, support 'normal', 'masked'
 _C.MODEL.RECOVER_TARGET_TYPE = 'normal'
 # [MFM] Frequency loss parameters

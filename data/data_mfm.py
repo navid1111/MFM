@@ -5,9 +5,16 @@ import torchvision.transforms as T
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data._utils.collate import default_collate
 from torchvision.datasets import ImageFolder
-from timm.data.transforms import _pil_interp
+try:
+    from timm.data.transforms import str_to_pil_interp as _resolve_interp
+except ImportError:
+    from timm.data.transforms import _pil_interp as _resolve_interp
 
 from .random_degradations import RandomBlur, RandomNoise
+
+
+def ensure_rgb(img):
+    return img.convert('RGB') if img.mode != 'RGB' else img
 
 
 class FreqMaskGenerator:
@@ -40,8 +47,8 @@ class FreqMaskGenerator:
 class MFMTransform:
     def __init__(self, config):
         self.transform_img = T.Compose([
-            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-            T.RandomResizedCrop(config.DATA.IMG_SIZE, scale=(config.DATA.MIN_CROP_SCALE, 1.), interpolation=_pil_interp(config.DATA.INTERPOLATION)),
+            T.Lambda(ensure_rgb),
+            T.RandomResizedCrop(config.DATA.IMG_SIZE, scale=(config.DATA.MIN_CROP_SCALE, 1.), interpolation=_resolve_interp(config.DATA.INTERPOLATION)),
             T.RandomHorizontalFlip(),
         ])
 
@@ -51,6 +58,8 @@ class MFMTransform:
             model_patch_size = config.MODEL.SWIN.PATCH_SIZE
         elif config.MODEL.TYPE == 'vit':
             model_patch_size = config.MODEL.VIT.PATCH_SIZE
+        elif config.MODEL.TYPE == 'cvt':
+            model_patch_size = 1
         elif config.MODEL.TYPE == 'resnet':
             model_patch_size = 1
         else:
