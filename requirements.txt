@@ -1,7 +1,11 @@
+torch
+torchvision
+torchaudio
 opencv-python
 pyyaml
 scipy
 tensorboard
 termcolor
 timm==0.4.12
+transformers
 yacs
